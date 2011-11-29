@@ -1,0 +1,146 @@
+<html>
+<head></head>
+<body>
+<h1>Simulando jQuery</h1>
+
+
+<div id="mydiv">Aqui tem alguma coisa</div>
+
+<script>
+
+
+
+var entityPool = [];
+
+	size = entityPool.length;
+
+	entityPool[size] = {};
+	entityPool[size].name = "eu";
+	entityPool[size].x = 100;
+	entityPool[size].y = 200;
+	entityPool[size].color = 20;
+
+alert(entityPool[0]);
+
+
+// $ = function(value) {
+// 	this._funcs = {
+// 		val : function(tag) {
+// 			alert(tag);
+// 		}
+// 	};
+// 	return _funcs;
+// }
+
+
+
+// x = $("#mydiv");
+// alert(x);
+
+
+function DarthVaderHack(ladoNegroDaForca) {
+	if(ladoNegroDaForca)
+		mensagem = "nas mãos do Darth Vader";
+	else
+		mensagem = "com problemas tecnicos, contate a Assistencia Tecnica na galaxia mais próxima de você";
+}
+
+
+function Sabre() {
+	var estadoSabre;
+
+	this.desligar = function() {
+		alternarSabre(false);
+	}
+
+	this.ligar = function() {
+		alternarSabre(true);
+	}
+
+	function alternarSabre(estado) {
+		var estadoSabre = estado;
+		if(estadoSabre)
+			mensagem = "ligado";
+		else
+			mensagem = "desligado";
+	}
+
+	this.alertar = function() {
+		alert("O sabre está "+ mensagem);
+	}
+}
+
+Sabre.prototype.quebrar = function() {
+	alert("Hah! Quebrei sua espada!");
+}
+
+sabreObj = new Sabre();
+sabreObj.ligar();
+sabreObj.alertar();
+
+sabreObj.quebrar();
+
+
+
+// function ativarSabre(trueOrFalse) {
+// 	var estadoDoSabre = trueOrFalse;
+// 	alert(estadoDoSabre);
+// }
+
+//Revealing Module Pattern (Public & Private)
+// var skillet = (function() {
+//     var pub = {},
+//         //Private property
+//         amountOfGrease = "1 Cup";
+ 
+//     //Public property   
+//     pub.ingredient = "Bacon Strips";
+ 
+//     //Public method
+//     pub.fry = function() {
+//     	privateWay();
+//         console.log( "Frying " + pub.ingredient );
+//     };
+ 
+//     //Private method
+//     function privateWay() {
+//         //Do something...
+//         console.log("Entao"+amountOfGrease);
+//     }
+ 
+//  	// privateWay();
+
+//     //Return just the public parts
+//     return pub;
+// }());
+ 
+// //Public Properties
+// console.log( skillet.ingredient ); //Bacon Strips
+ 
+// //Public Methods
+// skillet.fry();
+ 
+// //Adding a public property to a Module
+// skillet.quantity = 12;
+// console.log( skillet.quantity ); //12
+ 
+// //Adding a public method to a Module
+// skillet.toString = function() {
+//     console.log( skillet.quantity + " " +
+//                  skillet.ingredient + " & " +
+//                  amountOfGrease + " of Grease" );
+// };
+ 
+// try {
+//     //Would have been successful,
+//     //but can't access private variable
+//     skillet.toString();
+// } catch( e ) {
+//     console.log( e.message ); //amountOfGrease is not defined
+// }
+
+//$("#mydiv").val("oi");
+
+</script>
+</body>
+</html>

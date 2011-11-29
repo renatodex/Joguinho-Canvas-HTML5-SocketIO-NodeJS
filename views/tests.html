@@ -1,0 +1,592 @@
+<html>
+<head>
+<title>Javascript Tests</title>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+<script src="jquery-1.4.4.min.js" ></script>
+
+<style>
+body {
+	margin-top:50px !important;
+	text-align:center;
+	margin:0 auto;
+}
+canvas {
+	border:1px solid;
+	background-image:url("ball_background.png");
+}
+h1 {
+	font-family:Arial;
+	letter-spacing:-3px;
+	font-size:40px;
+}
+
+</style>
+</head>
+<body>
+<h1>Joguinho, pure Canvas</h1>	
+
+<canvas id="canvas" width="600" height="300"></canvas>
+
+<script>
+
+// Aqui inicializamos o socket client side para o jogo
+var socket = io.connect('http://127.0.0.1:3000');
+
+var intervalId = 0;
+var ctx_width;
+var ctx_height;
+var ctx;
+var player_color;
+var player_mov_left = false;
+var player_mov_right = false;
+var player_pos_x;
+var player_pos_y;
+var player_vx = 4;
+var player_last_x;
+var player_last_y;
+var player_default_name = "meuheroi2";
+var myHeroWasCreated = false;
+var entityPool = [];
+
+
+function onKeyUp(evt) {
+	if(evt.keyCode == 37) player_mov_left = false;
+	if(evt.keyCode == 39) player_mov_right = false;
+}
+
+function onKeyDown(evt) {
+	if(evt.keyCode == 37) player_mov_left = true;
+	if(evt.keyCode == 39) player_mov_right = true;
+}
+
+$(document).keydown(onKeyDown);
+$(document).keyup(onKeyUp);
+
+function random(total) {
+	return Math.floor(Math.random() * total);
+}
+
+function draw() {
+	clear();
+
+	player = circle(
+		player_pos_x,
+		player_pos_y,
+		30,
+		player_color
+	);
+
+	for(i=0;i < entityPool.length;i++) {
+		if(entityPool[i]["name"] != player_default_name) {
+			circle(
+				entityPool[i]["x"],
+				entityPool[i]["y"],
+				30,
+				entityPool[i]["color"]
+			);
+		}
+	}
+
+	if(myHeroWasCreated == false) {
+		socket.emit("insertHeroName", player_default_name, player_pos_x, player_pos_y, function(success) {
+			if(success == true) {
+
+				socket.emit("printlog","Heroi criado com sucesso!!");
+				myHeroWasCreated = true;
+				socket.emit("listHeroes");
+			}
+		});
+	}
+
+	if(player_mov_left)
+		player_pos_x -= player_vx;
+	if(player_mov_right)
+		player_pos_x += player_vx;
+
+	if(player_mov_left || player_mov_right)
+	socket.emit("aHeroHasMoved", player_default_name, player_pos_x, player_pos_y, player_mov_left, player_mov_right);
+	else {
+		if(player_last_x != player_pos_x
+			|| player_last_y != player_pos_y)
+		socket.emit("aHeroHasStoped", player_default_name, player_pos_x, player_pos_y);	
+		
+		player_last_x = player_pos_x;
+		player_last_y = player_pos_y;		
+	}
+
+}
+
+function generate_color() {
+	r = random(255);
+	g = random(255);
+	b = random(255);
+	return "rgb("+r+","+g+","+b+")";
+}
+
+function init_player() {
+	player_color = generate_color();
+	player_pos_x = 50;
+	player_pos_y = ctx_height-30-18;
+	player_default_name = prompt("Escolha um nome para seu heroi:");
+}
+
+function clear() {
+	ctx.clearRect(0,0, ctx_width, ctx_height);
+}
+
+function circle(x, y, r, color) {
+	ctx.beginPath();
+	ctx.fillStyle = color;
+	ctx.arc(x,y,r, 0, Math.PI*2, true);
+	ctx.closePath();
+	ctx.fill();
+}
+
+function init() {
+	ctx = $("#canvas")[0].getContext("2d");
+	ctx_width = $("#canvas").width();
+	ctx_height = $("#canvas").height();
+
+
+	init_player();
+
+
+	// VERIFICAR QUANTOS PLAYERS TEM, E CRIAR ELES
+	socket.emit("getHeroesList",function(heroesList) {
+		//alert(heroesList);
+		entityPool[heroesList]
+		for(i=0;i<heroesList.length;i++) {
+			entityPool[i] = heroesList[i];
+			entityPool[i]["color"] = generate_color();
+		}
+	});
+
+
+	intervalId = setInterval(draw, 10);
+	return intervalId;
+}
+
+function addNewPlayer(name, x, y) {
+	alert("Chegou um cara novo:" + name);
+}
+
+
+
+
+
+
+init();
+
+// Este é basicamente o POS-PROCESSAMENTO para criar novos herois.
+// Quando o heroi estiver no jogo, e um NOVO heroi aparecer, ele sera criado.
+// CASE: Voce é o primeiro a entrar e um segundo entra.
+alert(player_default_name);
+alert(player_pos_x);
+alert(player_pos_y);
+socket.emit('newHeroHasCome',player_default_name,player_pos_x,player_pos_y);
+socket.on('newHeroHasCome', function(heroName, px, py) {
+	alert("ALGO="+heroName+"/"+px+"/"+py);
+	
+	pos = entityPool.length;
+	entityPool[pos] = new Array();
+	entityPool[pos]["name"] = heroName;
+	entityPool[pos]["x"] = px;
+	entityPool[pos]["y"] = py;
+	entityPool[pos]["color"] = generate_color();
+	alert("GARRRRAA");
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- <br/><br/>
+Coordenada X: <span id="tcx">0</span><br/>
+Coordenada Y: <span id="tcy">0</span>
+
+<br/><br/>
+RowFloor X: <span id="rfcx">0</span><br/>
+ColFloor Y: <span id="rfcy">0</span> -->
+
+<script>
+// get a reference to the canvas
+
+// var x = 150;
+// var y = 150;
+// var dx = 3;
+// var dy = 2;
+// var WIDTH;
+// var HEIGHT;
+// var ctx;
+// var paddlex;
+// var paddleh;
+// var paddlew;
+// var rightDown = false;
+// var leftDown = false;
+// var canvasMinX;
+// var canvasMinY;
+// var intervalId = 0;
+// var bricks;
+// var NROWS;
+// var NCOLS;
+// var BRICKWIDTH;
+// var BRICKHEIGHT;
+// var PADDING;
+
+// function init_bricks() {
+// 	NROWS = 5;
+// 	NCOLS = 5;
+// 	BRICKWIDTH = (WIDTH/NCOLS) - 1;
+// 	BRICKHEIGHT = 15;
+// 	PADDING = 1;
+
+// 	bricks = new Array(NROWS);
+// 	for(i=0; i < NROWS; i++) {
+// 		bricks[i] = new Array(NCOLS);
+// 		for(j=0; j < NCOLS; j++) {
+// 			bricks[i][j] = 1;
+// 		}
+// 	}
+// }
+
+// function init_mouse() {
+// 	canvasMinX = $("#canvas").offset().left;
+// 	canvasMaxX = canvasMinX + WIDTH;
+// }
+
+// function onMouseMove(evt) {
+// 	if(evt.pageX > canvasMinX && evt.pageX < canvasMaxX) {
+// 		paddlex = evt.pageX - canvasMinX;
+// 	}
+// }
+
+// $(document).mousemove(onMouseMove);
+
+// function onKeyDown(evt) {
+// 	if(evt.keyCode == 39) rightDown = true;
+// 	if(evt.keyCode == 37) leftDown = true;
+// }
+
+// function onKeyUp(evt) {
+// 	if(evt.keyCode == 39) rightDown = false;
+// 	if(evt.keyCode == 37) leftDown = false;
+// }
+
+// $(document).keydown(onKeyDown);
+// $(document).keyup(onKeyUp);
+
+// function init_paddle() {
+// 	paddlex = WIDTH/2;
+// 	paddleh = 10;
+// 	paddlew = 75;
+// }
+
+// function init() {
+// 	ctx = $("#canvas")[0].getContext("2d");
+// 	WIDTH = $("#canvas").width();
+// 	HEIGHT = $("#canvas").height();
+// 	intervalId = setInterval(draw, 10);
+// 	return intervalId;
+// }
+
+// function circle(x,y,r) {
+// 	ctx.beginPath();
+// 	ctx.arc(x, y, r, 0, Math.PI*2, true);
+// 	ctx.closePath();
+// 	ctx.fill();
+// }
+
+// function rect(x,y,w,h) {
+// 	ctx.beginPath();
+// 	ctx.rect(x,y,w,h);
+// 	ctx.closePath();
+// 	ctx.fill();
+// }
+
+// function clear() {
+// 	ctx.clearRect(0,0,WIDTH,HEIGHT);
+// }
+
+// function draw() {
+// 	clear();
+// 	circle(x, y, 10);
+
+
+// 	if(rightDown) paddlex += 5;
+// 	if(leftDown) paddlex -= 5;
+// 	rect(paddlex, HEIGHT-paddleh, paddlew, paddleh);
+
+
+// 	for(i = 0; i < NROWS; i++) {
+// 		for(j=0; j < NCOLS; j++) {
+// 			if(bricks[i][j] == 1) {
+// 				rect(
+// 					(j*(BRICKWIDTH+PADDING))+PADDING,
+// 					(i*(BRICKHEIGHT+PADDING))+PADDING,
+// 					BRICKWIDTH,
+// 					BRICKHEIGHT
+// 				);
+// 			}
+// 		}
+// 	}
+
+// 	rowheight = BRICKHEIGHT + PADDING;
+// 	colwidth = BRICKWIDTH + PADDING;
+// 	row = Math.floor(y/rowheight);
+// 	col = Math.floor(x/colwidth);
+
+// 	if(y < (NROWS * rowheight)
+// 	&& row >= 0
+// 	&& col >= 0
+// 	&& bricks[row][col] == 1) {
+// 		dy = -dy;
+// 		bricks[row][col] = 0;
+// 	}
+
+// 	if(x+dx > WIDTH-5 || x+dx < 5)
+// 		dx = -dx;
+
+// 	if(y+dy < 0)
+// 		dy = -dy
+// 	else if(y+dy > HEIGHT-5) {
+// 		if(x > paddlex && x < paddlex + paddlew)
+// 			dy = -dy;
+// 		else
+// 			clearInterval(intervalId);
+// 	}
+
+// 	x += dx;
+// 	y += dy;
+
+// 	$("#tcx").text(x);
+// 	$("#tcy").text(y);
+
+// 	$("#rfcx").text(row);
+// 	$("#rfcy").text(col);
+
+// }
+
+// init();
+// init_paddle();
+// init_mouse();
+// init_bricks();
+
+
+
+
+// function Enemy(x, y, settings) {
+// 	this.x = x;
+// 	this.y = y;
+// 	this.settings = settings;
+// 	this.updatePos = function(x, y) {
+// 		this.x = x;
+// 		this.y = y;
+// 	}
+// }
+// myEnemy = new Enemy(10, 20, {boss: false});
+// myBoss = new Enemy(10, 80, {boss: true});
+// mySpecialEnemy = new Enemy(10, 120, {boss: false, special: true});
+
+
+// alert(myEnemy.y);
+// alert(myBoss.y);
+// alert(mySpecialEnemy.y);
+
+/* ------------------------------------------ */
+
+// alert(mySpecialEnemy.x);
+
+/* ------------------------------------------ */
+
+// var EnemyEntity = {
+// 	settings : {},
+// 	updatePost : function(x, y) {
+// 		settings.x = x;
+// 		settings.y = y;
+// 	},
+// };
+
+// myEnemy = EnemyEntity;
+// myEnemy.settings = {
+// 	x: 10,
+// 	y: 50,
+// 	boss: false
+// }
+
+
+// myBoss = EnemyEntity;
+// myBoss.settings = {
+// 	x: 10,
+// 	y: 100,
+// 	boss: true
+// }
+
+// mySpecialEnemy = EnemyEntity;
+// mySpecialEnemy.settings = {
+// 	x: 10,
+// 	y: 150,
+// 	boss: false,
+// 	special: true
+// }
+
+// alert(myEnemy.settings.y);
+// alert(myBoss.settings.y);
+// alert(mySpecialEnemy.settings.y);
+
+
+/* ------------ */
+
+// var EnemyGeneric = (function() {
+// 	this.myvar = 10;
+// 	return this;
+// })();
+// var Enemy1 = new EnemyGeneric();
+
+// alert(1);
+// alert(EnemyGeneric.myvar);
+
+
+// (function($w,undefined) {
+
+// 	$w.Closure = {
+// 		x: 0,
+// 		y: 0,
+
+// 		updatePos: function(x, y) {
+// 			this.x = x;
+// 			this.y = y;
+// 		}
+// 	}
+
+// 	// alert(Closure.$c);
+
+// })(window);
+
+
+// (function($w, undefined) {
+// 	Closure.EntityPool = {
+
+// 		/* Defining some Constants */
+// 		Constants: {
+// 			IS_A_NPC: "npc",
+// 			IS_A_PLAYER: "player",
+// 			IS_AN_ENEMY: "enemy",
+// 			IS_AN_OBJECT: "object"
+// 		},
+
+// 		npcPool: [],
+// 		playerPool: [],
+// 		enemyPool: [],
+// 		objectPool: [],
+// 		add: function(obj, type) {
+// 			var usedPool = this.getPoolByType(type)
+// 			usedPool[usedPool.length] = obj;
+// 			alert("added a new "+type);
+// 		},
+// 		addEnemy: function(obj) {
+// 			this.add(obj, this.Constants.IS_AN_ENEMY);
+// 		},
+// 		addPlayer: function(obj) {
+// 			this.add(obj, this.Constants.IS_A_PLAYER);
+// 		},
+// 		addNPC: function(obj) {
+// 			this.add(obj, this.Constants.IS_A_NPC);
+// 		},
+// 		addObject: function(obj) {
+// 			this.add(obj, this.Constants.IS_AN_OBJECT);
+// 		},
+// 		getEntityByIndex: function(type, index) {
+// 			var usedPool = this.getPoolByType(type);
+// 			return usedPool[index];
+// 		},
+// 		getEntityByName: function(type, name) {
+// 			var usedPool = this.getPoolByType(type);
+// 			for(i=0;i<usedPool.length;i++) {
+// 				if(usedPool[i].name === name)
+// 					return usedPool[i];
+// 			}
+// 		},                                                                                                                                                                                                            
+// 		getPoolByType: function(type) {
+// 			var usedPool;
+
+// 			switch(type) {
+// 				case this.Constants.IS_A_NPC:
+// 					usedPool = this.npcPool;
+// 					break;
+// 				case this.Constants.IS_A_PLAYER:
+// 					usedPool = this.playerPool;
+// 					break;
+// 				case this.Constants.IS_AN_ENEMY:
+// 					usedPool = this.enemyPool;
+// 					break;	
+// 				case this.Constants.IS_AN_OBJECT:
+// 					usedPool = this.objectPool;
+// 			}
+
+// 			return usedPool;
+// 		}
+// 	}
+// })(window);
+
+
+
+// (function($w, undefined) {
+// 	Closure.EntityPool.EnemyEntity = {
+// 		mycount: 10,
+// 		playing: false,
+// 		add: function(obj) {
+// 			return Closure.EntityPool.add(obj, Closure.EntityPool.Constants.IS_AN_ENEMY);
+// 		},
+// 		// getEntityByIndex: function(index) {
+// 		// 	return this.Pool[index];
+// 		// },
+// 		// getEntityByName: function(name) {
+// 		// 	for(i=0;i<this.mainPool.length;i++) {
+// 		// 		if(this.mainPool[i].name === name)
+// 		// 			return this.mainPool[i];
+// 		// 	}
+// 		// }
+// 		move: function() {
+			
+// 		},
+// 	}
+// })(window);
+
+
+// alert(Closure.x);
+
+// Closure.updatePos(10,20);
+
+// alert(Closure.x);
+
+
+// Closure.EntityPool.EnemyEntity.add({
+// 	name: "Bolinha",
+// 	x: 100,
+// 	y: 200,
+// 	doAttack : function() {
+// 		alert("RRRAAGGHHH~!");
+// 	},
+// });
+
+// alert("x");
+// Closure.EntityPool.EnemyEntity.move();
+
+// myEnemyFound = Closure.EntityPool.getEntityByName("Bolinha");
+// myEnemyFound.doAttack();
+
+// alert("end");
+
+</script>
+</body>
+</html>
